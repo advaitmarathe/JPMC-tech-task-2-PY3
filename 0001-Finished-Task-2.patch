@@ -1,0 +1,123 @@
+From 57f43830f89f84382f5f68b4d1bcefed229e581c Mon Sep 17 00:00:00 2001
+From: Advait Marathe <adumarathe@gmail.com>
+Date: Thu, 21 May 2020 15:38:49 -0700
+Subject: [PATCH] Finished Task 2
+
+---
+ src/App.tsx   | 22 ++++++++++++++++++----
+ src/Graph.tsx | 23 +++++++++++++++++++----
+ 2 files changed, 37 insertions(+), 8 deletions(-)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 0728518..41b971d 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -8,6 +8,7 @@ import './App.css';
+  */
+ interface IState {
+   data: ServerRespond[],
++  showGraph: boolean,
+ }
+ 
+ /**
+@@ -22,6 +23,7 @@ class App extends Component<{}, IState> {
+       // data saves the server responds.
+       // We use this state to parse data down to the child element (Graph) as element property
+       data: [],
++      showGraph: false,
+     };
+   }
+ 
+@@ -29,18 +31,30 @@ class App extends Component<{}, IState> {
+    * Render Graph react component with state.data parse as property data
+    */
+   renderGraph() {
+-    return (<Graph data={this.state.data}/>)
++    if (this.state.showGraph ) {
++      return (<Graph data={this.state.data}/>)
++    }
+   }
+ 
+   /**
+    * Get new data from server and update the state with the new data
+    */
+   getDataFromServer() {
+-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
+       // Update the state by creating a new array of data that consists of
+       // Previous data in the state and the new data from server
+-      this.setState({ data: [...this.state.data, ...serverResponds] });
+-    });
++       let x = 0;
++      const interval = setInterval(() => {
++        DataStreamer.getData((serverResponds: ServerRespond[]) => {
++          this.setState ({
++            data: serverResponds , 
++            showGraph: true , 
++          });
++        });
++    x++;
++    if (x>1000) {
++      clearInterval(interval);
++    }
++  }, 100);
+   }
+ 
+   /**
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index ec1430e..88633c9 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -9,12 +9,14 @@ import './Graph.css';
+ interface IProps {
+   data: ServerRespond[],
+ }
+-
++// declare global {
++//   type unknown = any
++// }
+ /**
+  * Perspective library adds load to HTMLElement prototype.
+  * This interface acts as a wrapper for Typescript compiler.
+  */
+-interface PerspectiveViewerElement {
++interface PerspectiveViewerElement extends HTMLElement {
+   load: (table: Table) => void,
+ }
+ 
+@@ -29,11 +31,17 @@ class Graph extends Component<IProps, {}> {
+   render() {
+     return React.createElement('perspective-viewer');
+   }
++  
+ 
+   componentDidMount() {
+     // Get element to attach the table from the DOM.
+-    const elem: PerspectiveViewerElement = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
+-
++    const elem= document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
++      // elem.setAttribute('view','y_line');
++      // elem.setAttribute('column-pivots','["stock"]')
++      // elem.setAttribute('row-pivots','["timestamp"]')
++      // elem.setAttribute('columns','["top_ask_price"]')
++      // elem.setAttribute("aggregates",
++      // '{"stock": "distinct count","top_ask_price":"avg","top_bid_price":"avg","time_stamp":"distinct count"')
+     const schema = {
+       stock: 'string',
+       top_ask_price: 'float',
+@@ -49,6 +57,13 @@ class Graph extends Component<IProps, {}> {
+ 
+       // Add more Perspective configurations here.
+       elem.load(this.table);
++      //sets the attribute for the elements, setting columns, rows, and averaging duplicate values, making them the same
++      elem.setAttribute('view',"y_line");
++      elem.setAttribute("column-pivots",'["stock"]');
++      elem.setAttribute("row-pivots",'["timestamp"]');
++      elem.setAttribute("columns",'["top_ask_price"]');
++      elem.setAttribute("aggregates",
++      '{"stock": "distinct count","top_ask_price":"avg","top_bid_price":"avg","time_stamp":"distinct count"}');
+     }
+   }
+ 
+-- 
+2.23.0
+
